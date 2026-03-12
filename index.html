@@ -7,22 +7,22 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
   :root {
-    --bg: #09090f;
-    --surface: #111118;
-    --surface2: #17171f;
-    --border: #2a2a38;
-    --border-bright: #3d3d52;
-    --text: #e8e8f0;
+    --bg: #f5f5f8;
+    --surface: #ffffff;
+    --surface2: #f0f0f5;
+    --border: #e0e0ea;
+    --border-bright: #c8c8d8;
+    --text: #1a1a2e;
     --muted: #7070a0;
-    --purple: #8b5cf6;
-    --pink: #ec4899;
-    --orange: #f97316;
+    --purple: #7c3aed;
+    --pink: #db2777;
+    --orange: #ea6c0a;
     --grad: linear-gradient(135deg, var(--purple), var(--pink), var(--orange));
-    --grad-text: linear-gradient(90deg, #a78bfa, #f472b6, #fb923c);
-    --green: #34d399;
-    --yellow: #fbbf24;
-    --red: #f87171;
-    --blue: #60a5fa;
+    --grad-text: linear-gradient(90deg, #7c3aed, #db2777, #ea6c0a);
+    --green: #059669;
+    --yellow: #d97706;
+    --red: #dc2626;
+    --blue: #2563eb;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -43,7 +43,7 @@
     left: -20%;
     width: 80%;
     height: 80%;
-    background: radial-gradient(ellipse, rgba(139,92,246,0.08) 0%, transparent 60%);
+    background: radial-gradient(ellipse, rgba(124,58,237,0.05) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
   }
@@ -54,7 +54,7 @@
     right: -10%;
     width: 60%;
     height: 60%;
-    background: radial-gradient(ellipse, rgba(236,72,153,0.06) 0%, transparent 60%);
+    background: radial-gradient(ellipse, rgba(219,39,119,0.04) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
   }
@@ -64,7 +64,7 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(9,9,15,0.85);
+    background: rgba(255,255,255,0.92);
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
     padding: 0 32px;
@@ -374,7 +374,7 @@
     user-select: none;
     transition: background 0.15s;
   }
-  .phase-header:hover { background: var(--surface2); }
+  .phase-header:hover { background: #ffffff; }
 
   .phase-left {
     display: flex;
@@ -481,7 +481,7 @@
     margin-bottom: 4px;
     position: relative;
   }
-  .task-item:hover { background: var(--surface2); }
+  .task-item:hover { background: #ffffff; }
   .task-item.done { opacity: 0.5; }
 
   .task-check {
@@ -725,7 +725,7 @@
   }
 
   .toast {
-    background: var(--surface2);
+    background: #ffffff;
     border: 1px solid var(--border-bright);
     border-radius: 10px;
     padding: 12px 18px;
@@ -796,13 +796,13 @@
   }
   .script-url-hint a { color: var(--purple); text-decoration: none; }
   .script-url-hint a:hover { text-decoration: underline; }
-  .step-list { margin-top: 14px; padding: 14px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); }
+  .step-list { margin-top: 14px; padding: 14px; background: #ffffff; border-radius: 8px; border: 1px solid var(--border); }
   .step-list li { font-size: 12px; color: var(--muted); margin-bottom: 6px; margin-left: 16px; line-height: 1.5; }
   .step-list li strong { color: var(--text); }
 
   /* ── SCROLLBAR ── */
   ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-track { background: #f0f0f5; }
   ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
 
   /* ── EMPTY STATE ── */
@@ -1054,7 +1054,7 @@ const PHASES = [
         tasks: [
           { id: 'c10', label: 'Book travel for confirmed attendees',  note: 'Hotel blocks, flights. Confirm with finance on T&E policy.', owner: 'EA / Ops', link: 'logistics' },
           { id: 'c11', label: 'Confirm booth size and specs',         note: 'Get floor plan. Note power, rigging, Wi-Fi requirements.', owner: 'Owner' },
-          { id: 'c12', label: 'Register all attending staff',         note: 'Use show's portal. Confirm badge types.', owner: 'Owner', link: 'logistics' },
+          { id: 'c12', label: 'Register all attending staff',         note: 'Use show\'s portal. Confirm badge types.', owner: 'Owner', link: 'logistics' },
         ]
       }
     ]
@@ -1126,7 +1126,7 @@ const PHASES = [
         tasks: [
           { id: 'o5', label: 'Daily lead capture review + sync',    note: 'Spot-check lead quality. Flag hot leads to AE same day.', owner: 'Marketing Ops' },
           { id: 'o6', label: 'Social coverage going out',            note: 'Stories, posts, video. Minimum 2x/day.', owner: 'Social' },
-          { id: 'o7', label: 'Restock swag + collateral as needed',  note: 'Check levels midday. Don't run out on the last day.', owner: 'Lead Staff' },
+          { id: 'o7', label: 'Restock swag + collateral as needed',  note: 'Check levels midday. Don\'t run out on the last day.', owner: 'Lead Staff' },
           { id: 'o8', label: 'Priority meeting notes captured',      note: 'Notes in SFDC same day for hot meetings.', owner: 'AE / SDR', link: 'sales' },
         ]
       }
@@ -1159,7 +1159,7 @@ const PHASES = [
       {
         label: 'Retrospective',
         tasks: [
-          { id: 'ps8', label: 'Event debrief meeting held',                   note: 'What worked, what didn't, what to repeat. Done within 1 week.', critical: true, owner: 'Owner' },
+          { id: 'ps8', label: 'Event debrief meeting held',                   note: 'What worked, what didn\'t, what to repeat. Done within 1 week.', critical: true, owner: 'Owner' },
           { id: 'ps9', label: 'ROI summary submitted to leadership',           note: 'Meetings booked, pipeline created, leads vs goal.', owner: 'Owner' },
           { id: 'ps10', label: 'Show renewed / decision made for next year',   note: 'Was it worth it? Confirm early bird deadline.', owner: 'Owner', link: 'logistics' },
           { id: 'ps11', label: 'Budget actuals vs. estimate reconciled',        note: 'Submit final invoices. Update events tracker with actuals.', owner: 'Finance / Owner', link: 'logistics' },
