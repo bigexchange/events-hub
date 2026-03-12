@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BigID Events Command Center</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+  :root {
+    --bg: #09090f;
+    --surface: #111118;
+    --surface2: #17171f;
+    --border: #2a2a38;
+    --border-bright: #3d3d52;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --purple: #8b5cf6;
+    --pink: #ec4899;
+    --orange: #f97316;
+    --grad: linear-gradient(135deg, var(--purple), var(--pink), var(--orange));
+    --grad-text: linear-gradient(90deg, #a78bfa, #f472b6, #fb923c);
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --blue: #60a5fa;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -40%;
+    left: -20%;
+    width: 80%;
+    height: 80%;
+    background: radial-gradient(ellipse, rgba(139,92,246,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -30%;
+    right: -10%;
+    width: 60%;
+    height: 60%;
+    background: radial-gradient(ellipse, rgba(236,72,153,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(9,9,15,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--grad);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    color: white;
+  }
+
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+  }
+
+  .logo-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .btn-new-event {
+    background: var(--grad);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .btn-new-event:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  /* ── MAIN LAYOUT ── */
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+  }
+
+  /* ── EVENT SELECTOR / CARDS ── */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .events-rail {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .event-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .event-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--grad);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+  }
+  .event-card:hover { border-color: var(--border-bright); transform: translateY(-2px); }
+  .event-card:hover::before, .event-card.active::before { transform: scaleX(1); }
+  .event-card.active { border-color: var(--purple); background: rgba(139,92,246,0.08); }
+
+  .event-type-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+  .chip-conference { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+  .chip-tradeshow  { background: rgba(249,115,22,0.12);  color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
+  .chip-webinar    { background: rgba(96,165,250,0.12);  color: #93c5fd; border: 1px solid rgba(96,165,250,0.3); }
+  .chip-summit     { background: rgba(236,72,153,0.12);  color: #f9a8d4; border: 1px solid rgba(236,72,153,0.3); }
+
+  .event-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+
+  .event-meta {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .event-progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .event-progress-fill {
+    height: 100%;
+    background: var(--grad);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .event-progress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── ADD EVENT CARD ── */
+  .add-event-card {
+    background: transparent;
+    border: 1px dashed var(--border-bright);
+    border-radius: 14px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .add-event-card:hover { border-color: var(--purple); color: var(--purple); background: rgba(139,92,246,0.05); }
+  .add-event-card .plus-icon { font-size: 24px; line-height: 1; }
+
+  /* ── CHECKLIST AREA ── */
+  .checklist-wrapper {
+    display: none;
+    animation: slideUp 0.35s ease;
+  }
+  .checklist-wrapper.visible { display: block; }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .checklist-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    gap: 24px;
+  }
+
+  .checklist-title-area h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    margin-bottom: 6px;
+    background: var(--grad-text);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .checklist-title-area .sub {
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .overall-progress {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 24px;
+    min-width: 220px;
+  }
+
+  .progress-ring {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+  }
+
+  .progress-ring svg {
+    transform: rotate(-90deg);
+  }
+
+  .progress-ring .ring-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 4;
+  }
+
+  .progress-ring .ring-fill {
+    fill: none;
+    stroke: url(#ringGrad);
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+  }
+
+  .progress-ring .ring-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .progress-info { flex: 1; }
+  .progress-pct {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .progress-done { font-size: 12px; color: var(--muted); }
+
+  /* ── PHASES ── */
+  .phases-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .phase-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .phase-header:hover { background: var(--surface2); }
+
+  .phase-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .phase-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .phase-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  .phase-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .phase-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .phase-pills {
+    display: flex;
+    gap: 6px;
+  }
+
+  .pill {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+  }
+  .pill-done  { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
+  .pill-left  { background: rgba(251,191,36,0.1);  color: var(--yellow); border: 1px solid rgba(251,191,36,0.25); }
+
+  .phase-chevron {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.25s;
+  }
+  .phase-block.open .phase-chevron { transform: rotate(180deg); }
+
+  /* mini progress bar in phase header */
+  .phase-mini-bar {
+    width: 80px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .phase-mini-fill {
+    height: 100%;
+    background: var(--grad);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── TASKS ── */
+  .phase-body {
+    display: none;
+    padding: 0 24px 24px;
+    animation: fadeIn 0.2s ease;
+  }
+  .phase-block.open .phase-body { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .task-group-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin: 20px 0 10px;
+    padding-left: 4px;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 4px;
+    position: relative;
+  }
+  .task-item:hover { background: var(--surface2); }
+  .task-item.done { opacity: 0.5; }
+
+  .task-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--border-bright);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+    font-size: 11px;
+  }
+  .task-item.done .task-check {
+    background: var(--green);
+    border-color: var(--green);
+    color: #0d1f17;
+  }
+  .task-item.critical:not(.done) .task-check { border-color: var(--red); }
+
+  .task-content { flex: 1; min-width: 0; }
+
+  .task-label {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 3px;
+  }
+  .task-item.done .task-label { text-decoration: line-through; color: var(--muted); }
+
+  .task-note {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .task-badges {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .badge {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .badge-critical { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+  .badge-owner    { background: rgba(96,165,250,0.1);  color: var(--blue); border: 1px solid rgba(96,165,250,0.2); }
+  .badge-link     { background: rgba(139,92,246,0.1);  color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); cursor: pointer; }
+  .badge-link:hover { background: rgba(139,92,246,0.2); }
+
+  /* ── RESOURCES PANEL ── */
+  .resources-section {
+    margin-top: 48px;
+  }
+
+  .resources-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .resources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .resource-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .resource-card:hover { border-color: var(--border-bright); transform: translateY(-1px); }
+
+  .resource-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .resource-info { flex: 1; min-width: 0; }
+  .resource-name { font-size: 13px; font-weight: 500; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .resource-type { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  /* ── CONFETTI ── */
+  .confetti-container {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+  }
+
+  .confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    top: -10px;
+    animation: confettiFall linear forwards;
+  }
+
+  @keyframes confettiFall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(9,9,15,0.8);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 20px;
+    padding: 32px;
+    width: 100%;
+    max-width: 520px;
+    animation: modalIn 0.25s ease;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    margin-bottom: 24px;
+    background: var(--grad-text);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .form-group { margin-bottom: 18px; }
+
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .form-input, .form-select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--purple); }
+  .form-select option { background: var(--surface); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    justify-content: flex-end;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 20px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--border-bright); color: var(--text); }
+
+  .btn-create {
+    background: var(--grad);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-create:hover { opacity: 0.9; }
+
+  /* ── TOAST ── */
+  .toast-container {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .toast {
+    background: var(--surface2);
+    border: 1px solid var(--border-bright);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  /* ── SYNC STATUS ── */
+  .sync-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .sync-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .sync-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .btn-settings {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 16px;
+    transition: all 0.15s;
+  }
+  .btn-settings:hover { border-color: var(--border-bright); color: var(--text); }
+
+  /* ── SETTINGS MODAL EXTRAS ── */
+  .script-url-hint {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-top: 6px;
+  }
+  .script-url-hint a { color: var(--purple); text-decoration: none; }
+  .script-url-hint a:hover { text-decoration: underline; }
+  .step-list { margin-top: 14px; padding: 14px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); }
+  .step-list li { font-size: 12px; color: var(--muted); margin-bottom: 6px; margin-left: 16px; line-height: 1.5; }
+  .step-list li strong { color: var(--text); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .big-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-state h3 { font-family: 'Syne', sans-serif; font-size: 20px; color: var(--text); margin-bottom: 8px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── RESOURCE FILTER CHIPS ── */
+  .filter-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .filter-chip {
+    padding: 4px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--muted);
+  }
+  .filter-chip:hover, .filter-chip.active { border-color: var(--purple); color: var(--purple); background: rgba(139,92,246,0.08); }
+
+  .phase-complete-banner {
+    background: rgba(52,211,153,0.08);
+    border: 1px solid rgba(52,211,153,0.2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#8b5cf6"/>
+      <stop offset="50%"  stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-area">
+    <div class="logo-badge">B</div>
+    <div>
+      <div class="logo-text">Events Command Center</div>
+      <div class="logo-sub">BigID Field Marketing</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-new-event" onclick="openModal()">+ Add Event</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="container">
+
+  <!-- Events Rail -->
+  <div class="section-label">Your Events</div>
+  <div class="events-rail" id="eventsRail">
+    <!-- populated by JS -->
+    <div class="add-event-card" onclick="openModal()">
+      <div class="plus-icon">＋</div>
+      <div>Add your first event</div>
+    </div>
+  </div>
+
+  <!-- Checklist Area -->
+  <div class="checklist-wrapper" id="checklistWrapper">
+    <div class="checklist-header">
+      <div class="checklist-title-area">
+        <h2 id="checklistTitle">Event Name</h2>
+        <div class="sub">
+          <span id="checklistMeta"></span>
+        </div>
+      </div>
+      <div class="overall-progress" id="overallProgress">
+        <div class="progress-ring">
+          <svg width="60" height="60" viewBox="0 0 60 60">
+            <circle class="ring-bg" cx="30" cy="30" r="24"/>
+            <circle class="ring-fill" cx="30" cy="30" r="24" id="ringFill"
+              stroke-dasharray="150.8"
+              stroke-dashoffset="150.8"/>
+          </svg>
+          <div class="ring-label" id="ringLabel">0%</div>
+        </div>
+        <div class="progress-info">
+          <div class="progress-pct" id="progressPct">0%</div>
+          <div class="progress-done" id="progressDone">0 of 0 complete</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phases-grid" id="phasesGrid">
+      <!-- populated by JS -->
+    </div>
+
+    <!-- Resources -->
+    <div class="resources-section">
+      <div class="resources-header">
+        <div class="section-label" style="margin:0">Resources for this show</div>
+      </div>
+      <div class="filter-chips" id="resourceFilters">
+        <div class="filter-chip active" data-filter="all" onclick="filterResources(this,'all')">All</div>
+        <div class="filter-chip" data-filter="design" onclick="filterResources(this,'design')">Design</div>
+        <div class="filter-chip" data-filter="copy" onclick="filterResources(this,'copy')">Copy</div>
+        <div class="filter-chip" data-filter="logistics" onclick="filterResources(this,'logistics')">Logistics</div>
+        <div class="filter-chip" data-filter="sales" onclick="filterResources(this,'sales')">Sales Enablement</div>
+        <div class="filter-chip" data-filter="legal" onclick="filterResources(this,'legal')">Legal/Contracts</div>
+      </div>
+      <div class="resources-grid" id="resourcesGrid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state when no event selected yet and events exist -->
+  <div id="pickEventHint" style="display:none">
+    <div class="empty-state">
+      <div class="big-icon">📡</div>
+      <h3>Select an event to view its checklist</h3>
+      <p>Click any event card above to load its runbook.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ADD EVENT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>Add New Event</h3>
+    <div class="form-group">
+      <label class="form-label">Event Name</label>
+      <input class="form-input" id="inputName" placeholder="e.g. RSA Conference 2025" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="inputType">
+          <option value="conference">Conference</option>
+          <option value="tradeshow">Trade Show</option>
+          <option value="webinar">Webinar</option>
+          <option value="summit">Summit / Executive</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Event Date</label>
+        <input class="form-input" id="inputDate" type="date" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Location / Format</label>
+        <input class="form-input" id="inputLocation" placeholder="e.g. Las Vegas, NV" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">DRI / Owner</label>
+        <input class="form-input" id="inputOwner" placeholder="e.g. Sarah" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-create" onclick="createEvent()">Create Runbook →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal">
+    <h3>⚙ Sync Settings</h3>
+    <div class="form-group">
+      <label class="form-label">Google Apps Script URL</label>
+      <input class="form-input" id="inputScriptUrl"
+        placeholder="https://script.google.com/macros/s/.../exec" />
+      <div class="script-url-hint">
+        Paste your deployed Web App URL here to sync events to Google Sheets and enable Slack + Calendar automations.
+        <ol class="step-list">
+          <li><strong>Open</strong> script.google.com → New Project</li>
+          <li><strong>Paste</strong> the contents of <code>events-backend.gs</code></li>
+          <li><strong>Edit</strong> the config vars at the top (Slack webhook, email, Calendar ID)</li>
+          <li><strong>Deploy</strong> → New deployment → Web App → Execute as: Me → Access: Anyone</li>
+          <li><strong>Copy</strong> the URL and paste it above</li>
+          <li>For daily overdue alerts: Triggers → Add Trigger → <code>checkOverdueTasks</code> → Day timer</li>
+        </ol>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+      <button class="btn-create" onclick="saveSettings()">Save & Connect →</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+<div class="confetti-container" id="confettiContainer"></div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const PHASES = [
+  {
+    id: 'contract',
+    icon: '✍️',
+    color: 'rgba(139,92,246,0.15)',
+    title: 'Contract Signed',
+    subtitle: 'Immediate actions once the ink is dry',
+    groups: [
+      {
+        label: 'Marketing & Promotion',
+        tasks: [
+          { id: 'c1', label: 'Create event ads (social + digital)',  note: 'Pull from approved brand kit. 1:1, 4:5, 16:9 formats.', critical: true, owner: 'Design', link: 'design' },
+          { id: 'c2', label: 'Add ads to social promo calendar',     note: 'Schedule in Sprout/buffer at least 6 weeks out.', owner: 'Social', link: 'copy' },
+          { id: 'c3', label: 'Launch meeting booking campaign',       note: 'Outreach sequence live — confirm Outreach/Salesloft template.', critical: true, owner: 'DemandGen', link: 'sales' },
+          { id: 'c4', label: 'Write event landing page copy',         note: 'Brief, CTA-forward, consistent with campaign messaging.', owner: 'PMM', link: 'copy' },
+          { id: 'c5', label: 'Confirm paid amplification budget',     note: 'LinkedIn + Google. Get PO approval if >$5k.', owner: 'DemandGen', link: 'logistics' },
+        ]
+      },
+      {
+        label: 'Internal Alignment',
+        tasks: [
+          { id: 'c6', label: 'Block exec calendars — Save the Date', note: 'Invite Dimitri + relevant RVPs immediately. Include logistics doc.', critical: true, owner: 'EA / Owner', link: 'logistics' },
+          { id: 'c7', label: 'Schedule event kickoff meeting',        note: 'Marketing, Sales, SDRs, Exec sponsor. Align on goals, ICP, messaging.', critical: true, owner: 'Owner', link: 'logistics' },
+          { id: 'c8', label: 'Confirm event goals & KPIs',            note: 'Meetings booked, pipeline target, net-new logos attending.', owner: 'Owner' },
+          { id: 'c9', label: 'Add event to company events tracker',   note: 'Salesforce campaign + internal wiki / notion.', owner: 'Marketing Ops' },
+        ]
+      },
+      {
+        label: 'Logistics',
+        tasks: [
+          { id: 'c10', label: 'Book travel for confirmed attendees',  note: 'Hotel blocks, flights. Confirm with finance on T&E policy.', owner: 'EA / Ops', link: 'logistics' },
+          { id: 'c11', label: 'Confirm booth size and specs',         note: 'Get floor plan. Note power, rigging, Wi-Fi requirements.', owner: 'Owner' },
+          { id: 'c12', label: 'Register all attending staff',         note: 'Use show's portal. Confirm badge types.', owner: 'Owner', link: 'logistics' },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'preshow',
+    icon: '🎯',
+    color: 'rgba(249,115,22,0.12)',
+    title: 'Pre-Show Prep',
+    subtitle: 'Must be locked at least 3 weeks before show',
+    groups: [
+      {
+        label: 'Content & Collateral',
+        tasks: [
+          { id: 'p1', label: 'Review + update all collateral',            note: 'One-pagers, battle cards, leave-behinds. Archive anything outdated.', critical: true, owner: 'PMM', link: 'copy' },
+          { id: 'p2', label: 'Print collateral ordered',                   note: 'Lead time = 10 biz days. Order by week -3.', critical: true, owner: 'PMM', link: 'logistics' },
+          { id: 'p3', label: 'Build audience-specific video kit',          note: 'Demo deck + recorded walk-through for the event ICP. Confirm with SE.', owner: 'PMM / SE', link: 'design' },
+          { id: 'p4', label: 'Confirm demo environment is show-ready',     note: 'Test all flows. Spinning up a clean instance?', critical: true, owner: 'SE' },
+          { id: 'p5', label: 'Prepare social + digital assets for on-site', note: 'Live coverage templates, sponsored posts, reel format.', owner: 'Design', link: 'design' },
+        ]
+      },
+      {
+        label: 'Swag & Booth',
+        tasks: [
+          { id: 'p6', label: '🎉 Are there stickers? (There should be stickers.)', note: 'Custom die-cut stickers, 500 minimum. Order from Sticker Mule.', critical: true, owner: 'Owner', link: 'logistics' },
+          { id: 'p7', label: 'Swag ordered + inventory confirmed',           note: 'Hoodies, pens, branded items per tier. Confirm quantities.', owner: 'PMM', link: 'logistics' },
+          { id: 'p8', label: 'Booth graphics finalized + submitted to show', note: 'Check show specs for file formats and resolution. Deadline: -3 weeks.', critical: true, owner: 'Design', link: 'design' },
+          { id: 'p9', label: 'Booth furnishings / AV confirmed with vendor',  note: 'Screens, furniture, lead scanner.', owner: 'Ops' },
+        ]
+      },
+      {
+        label: 'Staffing & Enablement',
+        tasks: [
+          { id: 'p10', label: 'Staffing finalized + schedule published',  note: 'Who is staffing each slot. Share as a doc/notion page.', critical: true, owner: 'Owner', link: 'logistics' },
+          { id: 'p11', label: 'Staff briefing deck ready',                 note: 'Talk track, personas, competitive objections, logistics. Short. Sharp.', critical: true, owner: 'PMM', link: 'sales' },
+          { id: 'p12', label: 'Attendee intel distributed to sales',        note: 'Export from event reg + Salesforce. Flag priority accounts.', owner: 'Marketing Ops', link: 'sales' },
+          { id: 'p13', label: 'Meeting targets confirmed with AEs',         note: 'Who owns which accounts? SDR support confirmed.', owner: 'Owner / Sales', link: 'sales' },
+          { id: 'p14', label: 'Exec dinner / VIP event invitations sent',   note: 'If applicable. Confirm venue, guest list finalized.', owner: 'Owner' },
+        ]
+      },
+      {
+        label: 'Final Checks',
+        tasks: [
+          { id: 'p15', label: 'Shipping manifest confirmed',     note: 'Booth materials, swag, collateral — with tracking numbers.', owner: 'Ops', link: 'logistics' },
+          { id: 'p16', label: 'Lead capture process confirmed',  note: 'Lead scanner working, custom questions programmed, fallback process in place.', critical: true, owner: 'Marketing Ops' },
+          { id: 'p17', label: 'Day-of comms / runsheet shared',  note: 'Slack channel live, agenda, contact list, emergency numbers.', owner: 'Owner', link: 'logistics' },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'onsite',
+    icon: '⚡',
+    color: 'rgba(251,191,36,0.1)',
+    title: 'At the Show',
+    subtitle: 'Live execution checklist',
+    groups: [
+      {
+        label: 'Setup',
+        tasks: [
+          { id: 'o1', label: 'Booth set up + inspected before show opens', note: 'Walk the full setup. Check screens, signage, power, swag display.', critical: true, owner: 'Lead Staff' },
+          { id: 'o2', label: 'Lead scanner tested + working',               note: 'Scan a test badge. Check it syncs.', critical: true, owner: 'Marketing Ops' },
+          { id: 'o3', label: 'Demo environment confirmed live on show Wi-Fi', note: 'Test all key flows on the show network.', critical: true, owner: 'SE' },
+          { id: 'o4', label: 'Team briefed on daily goals + key targets',    note: '5-minute standup each morning. Who are we trying to see?', owner: 'Owner' },
+        ]
+      },
+      {
+        label: 'During Show',
+        tasks: [
+          { id: 'o5', label: 'Daily lead capture review + sync',    note: 'Spot-check lead quality. Flag hot leads to AE same day.', owner: 'Marketing Ops' },
+          { id: 'o6', label: 'Social coverage going out',            note: 'Stories, posts, video. Minimum 2x/day.', owner: 'Social' },
+          { id: 'o7', label: 'Restock swag + collateral as needed',  note: 'Check levels midday. Don't run out on the last day.', owner: 'Lead Staff' },
+          { id: 'o8', label: 'Priority meeting notes captured',      note: 'Notes in SFDC same day for hot meetings.', owner: 'AE / SDR', link: 'sales' },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'postshow',
+    icon: '🚀',
+    color: 'rgba(52,211,153,0.1)',
+    title: 'Post-Event',
+    subtitle: 'Close the loop — within 72 hours of show close',
+    groups: [
+      {
+        label: 'Leads & Follow-Up',
+        tasks: [
+          { id: 'ps1', label: 'All leads uploaded + enriched in Salesforce', note: 'Scored by priority. Custom fields from scanner loaded.', critical: true, owner: 'Marketing Ops', link: 'sales' },
+          { id: 'ps2', label: 'Follow-up sequence launched for all leads',    note: 'Segment: Hot / Warm / Cold. Personalized for hot accounts.', critical: true, owner: 'DemandGen', link: 'copy' },
+          { id: 'ps3', label: 'Exec-level meeting notes sent to Dimitri',     note: 'Quick summary of any strategic conversations or intros.', owner: 'Owner' },
+          { id: 'ps4', label: 'AE pipeline opportunities created in SFDC',    note: 'Confirm every hot lead has an opp or is tied to a named account.', owner: 'Sales', link: 'sales' },
+        ]
+      },
+      {
+        label: 'Content & Amplification',
+        tasks: [
+          { id: 'ps5', label: 'On-site content published (photos, recap)',    note: 'LinkedIn post + internal Slack recap with numbers.', owner: 'Social / PMM', link: 'copy' },
+          { id: 'ps6', label: 'Thank-you / recap email to attendees sent',     note: 'If we had a hosted event or dinner.', owner: 'DemandGen', link: 'copy' },
+          { id: 'ps7', label: 'Competitive intel captured from show floor',    note: 'What were Varonis, Cyera, Securiti running? New messaging? New booth?', owner: 'PMM', link: 'copy' },
+        ]
+      },
+      {
+        label: 'Retrospective',
+        tasks: [
+          { id: 'ps8', label: 'Event debrief meeting held',                   note: 'What worked, what didn't, what to repeat. Done within 1 week.', critical: true, owner: 'Owner' },
+          { id: 'ps9', label: 'ROI summary submitted to leadership',           note: 'Meetings booked, pipeline created, leads vs goal.', owner: 'Owner' },
+          { id: 'ps10', label: 'Show renewed / decision made for next year',   note: 'Was it worth it? Confirm early bird deadline.', owner: 'Owner', link: 'logistics' },
+          { id: 'ps11', label: 'Budget actuals vs. estimate reconciled',        note: 'Submit final invoices. Update events tracker with actuals.', owner: 'Finance / Owner', link: 'logistics' },
+        ]
+      }
+    ]
+  }
+];
+
+const ALL_RESOURCES = [
+  { id: 'r1',  name: 'BigID Brand Kit',         icon: '🎨', color: 'rgba(139,92,246,0.15)', type: 'design',    url: '#' },
+  { id: 'r2',  name: 'Carousel Slide Skill',     icon: '🖼️', color: 'rgba(139,92,246,0.15)', type: 'design',    url: '#' },
+  { id: 'r3',  name: 'Event Ad Templates',       icon: '📐', color: 'rgba(139,92,246,0.15)', type: 'design',    url: '#' },
+  { id: 'r4',  name: 'Booth Graphics Specs',     icon: '📏', color: 'rgba(249,115,22,0.12)', type: 'design',    url: '#' },
+  { id: 'r5',  name: 'Messaging Matrix',         icon: '💬', color: 'rgba(96,165,250,0.1)',  type: 'copy',      url: '#' },
+  { id: 'r6',  name: 'Talk Track Library',       icon: '🗣️', color: 'rgba(96,165,250,0.1)',  type: 'copy',      url: '#' },
+  { id: 'r7',  name: 'Email Sequence Templates', icon: '📧', color: 'rgba(96,165,250,0.1)',  type: 'copy',      url: '#' },
+  { id: 'r8',  name: 'Post-Event Recap Template',icon: '📝', color: 'rgba(96,165,250,0.1)',  type: 'copy',      url: '#' },
+  { id: 'r9',  name: 'Staff Schedule Template',  icon: '📅', color: 'rgba(52,211,153,0.1)',  type: 'logistics', url: '#' },
+  { id: 'r10', name: 'Shipping Manifest Sheet',  icon: '📦', color: 'rgba(52,211,153,0.1)',  type: 'logistics', url: '#' },
+  { id: 'r11', name: 'T&E / Budget Tracker',     icon: '💰', color: 'rgba(52,211,153,0.1)',  type: 'logistics', url: '#' },
+  { id: 'r12', name: 'Event Goals & KPI Sheet',  icon: '🎯', color: 'rgba(251,191,36,0.1)',  type: 'logistics', url: '#' },
+  { id: 'r13', name: 'AIQ Sales Portal',         icon: '⚡', color: 'rgba(236,72,153,0.1)',  type: 'sales',     url: '#' },
+  { id: 'r14', name: 'Battle Cards',             icon: '🥊', color: 'rgba(236,72,153,0.1)',  type: 'sales',     url: '#' },
+  { id: 'r15', name: 'Competitive Intel Doc',    icon: '🔍', color: 'rgba(236,72,153,0.1)',  type: 'sales',     url: '#' },
+  { id: 'r16', name: 'Master Contract Folder',   icon: '📋', color: 'rgba(248,113,113,0.1)', type: 'legal',     url: '#' },
+  { id: 'r17', name: 'Vendor Contacts Sheet',    icon: '🤝', color: 'rgba(248,113,113,0.1)', type: 'legal',     url: '#' },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  CONFIG — paste your Apps Script Web App URL here once deployed
+// ═══════════════════════════════════════════════════════════════
+const CONFIG = {
+  get SCRIPT_URL() { return localStorage.getItem('bcc_script_url') || 'https://script.google.com/a/macros/bigid.com/s/AKfycbxbst_muCBwACq-i6SjgkL4FVTZmG1IxdjKp4ML9CR2dangU8Y0nt368Or1-W0Myvyv/exec'; },
+  get SYNC_ENABLED() { return !!(localStorage.getItem('bcc_script_url') || 'https://script.google.com/a/macros/bigid.com/s/AKfycbxbst_muCBwACq-i6SjgkL4FVTZmG1IxdjKp4ML9CR2dangU8Y0nt368Or1-W0Myvyv/exec'); }
+};
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let events = [];
+let activeEventId = null;
+let currentResourceFilter = 'all';
+let syncStatus = 'offline'; // 'connected'|'syncing'|'offline'|'error'
+
+// ─── SYNC LAYER ──────────────────────────────────────────────────────────────
+function setSyncStatus(status) {
+  syncStatus = status;
+  const dot  = document.getElementById('syncDot');
+  const label= document.getElementById('syncLabel');
+  if (!dot) return;
+  const map = {
+    connected: { color: 'var(--green)',  text: 'Synced to Sheets' },
+    syncing:   { color: 'var(--yellow)', text: 'Saving...' },
+    offline:   { color: 'var(--muted)',  text: 'Local only — add Script URL to sync' },
+    error:     { color: 'var(--red)',    text: 'Sync error — check console' }
+  };
+  const m = map[status] || map.offline;
+  dot.style.background  = m.color;
+  label.textContent     = m.text;
+}
+
+async function api(method, params) {
+  if (!CONFIG.SYNC_ENABLED) return null;
+  setSyncStatus('syncing');
+  try {
+    let url, opts;
+    if (method === 'GET') {
+      url  = CONFIG.SCRIPT_URL + '?' + new URLSearchParams(params);
+      opts = { method: 'GET' };
+    } else {
+      url  = CONFIG.SCRIPT_URL;
+      opts = { method: 'POST', body: JSON.stringify(params) };
+    }
+    const res  = await fetch(url, opts);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    setSyncStatus('connected');
+    return data;
+  } catch(e) {
+    console.error('Sync error:', e);
+    setSyncStatus('error');
+    showToast('⚠️ Sync failed — saved locally', 'var(--yellow)');
+    return null;
+  }
+}
+
+async function loadFromSheets() {
+  if (!CONFIG.SYNC_ENABLED) return;
+  setSyncStatus('syncing');
+  const data = await api('GET', { action: 'getEvents' });
+  if (data && data.events && data.events.length > 0) {
+    events = data.events;
+    renderEventsRail();
+    showToast('☁️ Loaded from Google Sheets', 'var(--blue)');
+    setSyncStatus('connected');
+  }
+}
+
+async function saveEventToSheets(ev) {
+  // Always persist locally first
+  persistLocal();
+  if (!CONFIG.SYNC_ENABLED) return;
+  await api('POST', { action: 'saveEvent', event: ev });
+}
+
+async function syncTaskUpdate(ev, taskId, taskLabel, checked, isCritical, phaseTitle, phaseComplete) {
+  persistLocal();
+  if (!CONFIG.SYNC_ENABLED) return;
+  const phase = PHASES.find(p => p.groups.some(g => g.tasks.some(t => t.id === taskId)));
+  await api('POST', {
+    action:        'updateTask',
+    eventId:       ev.id,
+    eventName:     ev.name,
+    taskId,
+    taskLabel,
+    checked,
+    isCritical,
+    phaseTitle,
+    phaseComplete,
+    eventDate:     ev.rawDate || null,
+    owner:         ev.owner   || '',
+    event:         ev
+  });
+}
+
+// ─── LOCAL PERSISTENCE (fallback always-on) ──────────────────────────────────
+function persistLocal() {
+  try { localStorage.setItem('bcc_events', JSON.stringify(events)); } catch(e) {}
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem('bcc_events');
+    if (raw) { events = JSON.parse(raw); return true; }
+  } catch(e) {}
+  return false;
+}
+
+// ─── RENDER EVENTS RAIL ──────────────────────────────────────────────────────
+function renderEventsRail() {
+  const rail = document.getElementById('eventsRail');
+  let html = '';
+
+  events.forEach(ev => {
+    const total = getTotalTasks(ev);
+    const done  = getDoneTasks(ev);
+    const pct   = total ? Math.round((done / total) * 100) : 0;
+    const chipClass = { conference:'chip-conference', tradeshow:'chip-tradeshow', webinar:'chip-webinar', summit:'chip-summit' }[ev.type] || 'chip-conference';
+    const typeLabel  = { conference:'Conference', tradeshow:'Trade Show', webinar:'Webinar', summit:'Summit' }[ev.type] || ev.type;
+    const active = ev.id === activeEventId ? 'active' : '';
+
+    html += `
+      <div class="event-card ${active}" onclick="selectEvent('${ev.id}')">
+        <div class="event-type-chip ${chipClass}">${typeLabel}</div>
+        <div class="event-name">${ev.name}</div>
+        <div class="event-meta">
+          <span>📅 ${ev.dateLabel}</span>
+          ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
+        </div>
+        <div class="event-progress-bar">
+          <div class="event-progress-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="event-progress-label">
+          <span>${pct}% complete</span>
+          <span>${done}/${total}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `
+    <div class="add-event-card" onclick="openModal()">
+      <div class="plus-icon">＋</div>
+      <div>Add event</div>
+    </div>
+  `;
+
+  rail.innerHTML = html;
+}
+
+// ─── SELECT EVENT ────────────────────────────────────────────────────────────
+function selectEvent(id) {
+  activeEventId = id;
+  renderEventsRail();
+  renderChecklist();
+  document.getElementById('pickEventHint').style.display = 'none';
+  document.getElementById('checklistWrapper').classList.add('visible');
+}
+
+function renderChecklist() {
+  const ev = events.find(e => e.id === activeEventId);
+  if (!ev) return;
+
+  document.getElementById('checklistTitle').textContent = ev.name;
+  document.getElementById('checklistMeta').textContent =
+    `${ev.dateLabel}${ev.location ? ' · ' + ev.location : ''}${ev.owner ? ' · DRI: ' + ev.owner : ''}`;
+
+  renderPhases(ev);
+  updateOverallProgress(ev);
+  renderResources();
+}
+
+// ─── PHASES ──────────────────────────────────────────────────────────────────
+function renderPhases(ev) {
+  const grid = document.getElementById('phasesGrid');
+  grid.innerHTML = '';
+
+  PHASES.forEach(phase => {
+    const allTasks = phase.groups.flatMap(g => g.tasks);
+    const total = allTasks.length;
+    const done  = allTasks.filter(t => ev.checked[t.id]).length;
+    const pct   = total ? Math.round((done / total) * 100) : 0;
+    const isOpen = ev.openPhases[phase.id] !== false; // default open
+
+    const block = document.createElement('div');
+    block.className = `phase-block ${isOpen ? 'open' : ''}`;
+    block.id = `phase-${phase.id}`;
+
+    let groupsHtml = '';
+    phase.groups.forEach(group => {
+      const allDone = group.tasks.every(t => ev.checked[t.id]);
+      groupsHtml += `
+        ${allDone ? `<div class="phase-complete-banner">✓ ${group.label} — all done!</div>` : `<div class="task-group-label">${group.label}</div>`}
+      `;
+      if (!allDone) {
+        group.tasks.forEach(task => {
+          const checked = ev.checked[task.id];
+          const badgesHtml = [
+            task.critical ? `<span class="badge badge-critical">critical</span>` : '',
+            task.owner    ? `<span class="badge badge-owner">${task.owner}</span>` : '',
+            task.link     ? `<span class="badge badge-link" onclick="event.stopPropagation();filterResources(null,'${task.link}');scrollToResources()">↗ resources</span>` : '',
+          ].join('');
+
+          groupsHtml += `
+            <div class="task-item ${checked ? 'done' : ''} ${task.critical && !checked ? 'critical' : ''}"
+                 onclick="toggleTask('${phase.id}','${task.id}')">
+              <div class="task-check">${checked ? '✓' : ''}</div>
+              <div class="task-content">
+                <div class="task-label">${task.label}</div>
+                ${task.note ? `<div class="task-note">${task.note}</div>` : ''}
+              </div>
+              ${badgesHtml ? `<div class="task-badges">${badgesHtml}</div>` : ''}
+            </div>
+          `;
+        });
+      }
+    });
+
+    block.innerHTML = `
+      <div class="phase-header" onclick="togglePhase('${phase.id}')">
+        <div class="phase-left">
+          <div class="phase-icon" style="background:${phase.color}">${phase.icon}</div>
+          <div>
+            <div class="phase-title">${phase.title}</div>
+            <div class="phase-subtitle">${phase.subtitle}</div>
+          </div>
+        </div>
+        <div class="phase-right">
+          <div class="phase-pills">
+            <div class="pill pill-done">${done} done</div>
+            <div class="pill pill-left">${total - done} left</div>
+          </div>
+          <div class="phase-mini-bar">
+            <div class="phase-mini-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="phase-chevron">▼</div>
+        </div>
+      </div>
+      <div class="phase-body">${groupsHtml}</div>
+    `;
+
+    grid.appendChild(block);
+  });
+}
+
+function togglePhase(phaseId) {
+  const ev = events.find(e => e.id === activeEventId);
+  if (!ev) return;
+  ev.openPhases[phaseId] = !ev.openPhases[phaseId];
+  const block = document.getElementById(`phase-${phaseId}`);
+  block.classList.toggle('open');
+}
+
+// ─── TOGGLE TASK ─────────────────────────────────────────────────────────────
+async function toggleTask(phaseId, taskId) {
+  const ev = events.find(e => e.id === activeEventId);
+  if (!ev) return;
+
+  ev.checked[taskId] = !ev.checked[taskId];
+  const wasJustChecked = ev.checked[taskId];
+
+  // Find task metadata for sync
+  const phase     = PHASES.find(p => p.id === phaseId);
+  const allTasks  = phase.groups.flatMap(g => g.tasks);
+  const task      = allTasks.find(t => t.id === taskId);
+  const allDone   = allTasks.every(t => ev.checked[t.id]);
+
+  renderEventsRail();
+  renderPhases(ev);
+  updateOverallProgress(ev);
+
+  if (wasJustChecked) {
+    if (allDone) {
+      fireConfetti();
+      showToast(`🎉 ${phase.title} phase complete!`, 'var(--green)');
+    } else {
+      showToast('✓ Task marked complete', 'var(--green)');
+    }
+  }
+
+  // Sync to Sheets + trigger Slack/Calendar automations
+  await syncTaskUpdate(ev, taskId, task ? task.label : taskId, wasJustChecked,
+    task ? !!task.critical : false, phase.title, allDone);
+}
+
+// ─── PROGRESS ────────────────────────────────────────────────────────────────
+function getTotalTasks(ev) {
+  return PHASES.flatMap(p => p.groups.flatMap(g => g.tasks)).length;
+}
+
+function getDoneTasks(ev) {
+  return PHASES.flatMap(p => p.groups.flatMap(g => g.tasks)).filter(t => ev.checked[t.id]).length;
+}
+
+function updateOverallProgress(ev) {
+  const total = getTotalTasks(ev);
+  const done  = getDoneTasks(ev);
+  const pct   = total ? Math.round((done / total) * 100) : 0;
+  const circumference = 2 * Math.PI * 24; // r=24
+
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressDone').textContent = `${done} of ${total} complete`;
+  document.getElementById('ringLabel').textContent = pct + '%';
+
+  const fill = document.getElementById('ringFill');
+  fill.style.strokeDashoffset = circumference - (pct / 100) * circumference;
+}
+
+// ─── RESOURCES ───────────────────────────────────────────────────────────────
+function renderResources() {
+  const grid = document.getElementById('resourcesGrid');
+  const resources = currentResourceFilter === 'all'
+    ? ALL_RESOURCES
+    : ALL_RESOURCES.filter(r => r.type === currentResourceFilter);
+
+  grid.innerHTML = resources.map(r => `
+    <div class="resource-card" onclick="openResource('${r.url}')">
+      <div class="resource-icon" style="background:${r.color}">${r.icon}</div>
+      <div class="resource-info">
+        <div class="resource-name">${r.name}</div>
+        <div class="resource-type">${r.type}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterResources(el, filter) {
+  currentResourceFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.filter === filter);
+  });
+  if (activeEventId) renderResources();
+}
+
+function scrollToResources() {
+  document.querySelector('.resources-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function openResource(url) {
+  showToast('🔗 Resource link — update with your actual URL!', 'var(--blue)');
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('inputName').focus();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+async function createEvent() {
+  const name     = document.getElementById('inputName').value.trim();
+  const type     = document.getElementById('inputType').value;
+  const dateVal  = document.getElementById('inputDate').value;
+  const location = document.getElementById('inputLocation').value.trim();
+  const owner    = document.getElementById('inputOwner').value.trim();
+
+  if (!name) {
+    document.getElementById('inputName').style.borderColor = 'var(--red)';
+    return;
+  }
+
+  const dateLabel = dateVal
+    ? new Date(dateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'Date TBD';
+
+  const ev = {
+    id:       'ev_' + Date.now(),
+    name, type, dateLabel,
+    rawDate:  dateVal,
+    location, owner,
+    checked:  {},
+    openPhases: {}
+  };
+
+  events.push(ev);
+  closeModal();
+  renderEventsRail();
+  selectEvent(ev.id);
+  showToast(`🚀 "${name}" runbook created!`, 'var(--purple)');
+  await saveEventToSheets(ev);
+
+  // Reset form
+  ['inputName','inputDate','inputLocation','inputOwner'].forEach(id => {
+    document.getElementById(id).value = '';
+    document.getElementById(id).style.borderColor = '';
+  });
+}
+
+// ─── CONFETTI ────────────────────────────────────────────────────────────────
+function fireConfetti() {
+  const container = document.getElementById('confettiContainer');
+  const colors = ['#8b5cf6','#ec4899','#f97316','#34d399','#fbbf24','#60a5fa'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const size  = Math.random() * 8 + 4;
+    const shape = Math.random() > 0.5 ? '50%' : '0%';
+    piece.style.cssText = `
+      left: ${Math.random() * 100}%;
+      width: ${size}px; height: ${size}px;
+      background: ${color};
+      border-radius: ${shape};
+      animation-duration: ${Math.random() * 2 + 1.5}s;
+      animation-delay: ${Math.random() * 0.5}s;
+    `;
+    container.appendChild(piece);
+    setTimeout(() => piece.remove(), 3500);
+  }
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+function showToast(msg, color = 'var(--text)') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.style.borderLeftColor = color;
+  toast.style.borderLeftWidth = '3px';
+  toast.innerHTML = `<span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3200);
+}
+
+// ─── KEYBOARD ────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ─── SETTINGS PANEL ─────────────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settingsOverlay').classList.add('open');
+  document.getElementById('inputScriptUrl').value = CONFIG.SCRIPT_URL;
+}
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+}
+function saveSettings() {
+  const url = document.getElementById('inputScriptUrl').value.trim();
+  if (url) {
+    localStorage.setItem('bcc_script_url', url);
+    showToast('✅ Script URL saved — syncing now...', 'var(--green)');
+    closeSettings();
+    setSyncStatus('connected');
+    loadFromSheets();
+  } else {
+    localStorage.removeItem('bcc_script_url');
+    setSyncStatus('offline');
+    showToast('Sync disabled — running locally', 'var(--muted)');
+    closeSettings();
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+(async function init() {
+  // Try Sheets first, fall back to localStorage, then show sample
+  const hadLocal = loadLocal();
+
+  if (CONFIG.SYNC_ENABLED) {
+    await loadFromSheets();
+  } else if (!hadLocal) {
+    // Show sample data so the UI isn't empty
+    const sample = {
+      id: 'ev_sample',
+      name: 'RSA Conference 2025',
+      type: 'conference',
+      dateLabel: 'Apr 28 – May 1, 2025',
+      rawDate: '2025-04-28',
+      location: 'San Francisco, CA',
+      owner: 'Sarah',
+      checked: { c1: true, c6: true, c7: true, c9: true },
+      openPhases: { contract: true, preshow: false, onsite: false, postshow: false }
+    };
+    events.push(sample);
+  }
+
+  renderEventsRail();
+  if (events.length > 0) selectEvent(events[0].id);
+  setSyncStatus(CONFIG.SYNC_ENABLED ? 'connected' : 'offline');
+})();
+</script>
+</body>
+</html>
